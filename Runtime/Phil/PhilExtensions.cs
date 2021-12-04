@@ -8,8 +8,68 @@ namespace Phil {
 
     public static class PhilExtensions{
 
+        // int
+        public static int Sign(this int i){
+            if(i > 0){ 
+                return 1;
+            } else if (i == 0){
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+
+        // float
+        public static int Sign(this float i){
+            if(i > 0f){
+                return 1;
+            } else if(i == 0){
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+
+        // bool
+        public static int AxisSign(this bool b){
+            return b ? 1 : -1;
+        }
+
+        // Value Tuple
+        public static T GetItem<T>(this (T,T,T,T) quad, int i){
+            switch(i){
+            default: throw new System.ArgumentException(string.Format("Bad index: {0}", i));
+            case 0: return quad.Item1;
+            case 1: return quad.Item2;
+            case 2: return quad.Item3;
+            case 3: return quad.Item4;
+            }
+        }
+
+        public static void SetItem<T>(ref this (T,T,T,T) quad, int i, T value){
+            switch(i){
+            default: throw new System.ArgumentException(string.Format("Bad index: {0}", i));
+            case 0: quad.Item1 = value; break;
+            case 1: quad.Item2 = value; break;
+            case 2: quad.Item3 = value; break;
+            case 3: quad.Item4 = value; break;
+            }
+        }
+
+        // Dictionary.KeyValue
+        public static (K,V) ToDuple<K,V>(this System.Collections.Generic.KeyValuePair<K,V> keyValuePair){
+            return (keyValuePair.Key, keyValuePair.Value);
+        }
+
+        public static void RemoveEntries<K,V>(this Dictionary<K,V> dict, IReadOnlyList<K> keys){
+            int keyCount = keys.Count;
+            for(int i = 0; i < keyCount; i++){
+                dict.Remove(keys[i]);
+            }
+        }
+
         // System.Array
-        public static bool NullOrEmpty<T>( this T[] arr ){
+        public static bool IsNullOrEmpty<T>( this T[] arr ){
             return (arr == null || arr.Length == 0);
         }
 
@@ -67,6 +127,19 @@ namespace Phil {
             float x = Mathf.Clamp(point.x, rect.xMin, rect.xMax);
             float y = Mathf.Clamp(point.y, rect.yMin, rect.yMax);
             return new Vector2(x,y);
+        }
+
+        public static bool Intersect(this Rect a, Rect b, out Rect c){
+            if(!a.Overlaps(b)){
+                c = new Rect(0,0,0,0);
+                return false;
+            } else {
+                var minOfMaxes = Vector2.Min(a.max, b.max);
+                var maxOfMins = Vector2.Max(a.min, b.min);
+                var size = minOfMaxes - maxOfMins;
+                c = new Rect(maxOfMins, size);
+                return true;
+            }
         }
 
         // Plane
@@ -148,6 +221,10 @@ namespace Phil {
         }
 
         // List
+        public static bool IsNullOrEmpty<T>(this List<T> list){
+            return (list==null || list.Count==0);
+        }
+
         public static void MaybeExpandThenPopulate<T>(this List<T> list, int newCapacity, T newEntryValue){
             if(newCapacity <= list.Capacity){
                 return;
@@ -179,6 +256,34 @@ namespace Phil {
             int listCount = list.Count;
             for(int i = 0; i < listCount; i++){
                 int curScore = ScoreFunc(list[i]);
+                if(curScore <= minScore){
+                    minScore = curScore;
+                    bestIndex = i;
+                }
+            }
+            return list[bestIndex];
+        }
+
+        public static T GetHighestScoringElement<T>(this List<T> list, System.Func<T, float> ScoreFunc) {
+            float maxScore = Mathf.NegativeInfinity;
+            int bestIndex = 0;
+            int listCount = list.Count;
+            for(int i = 0; i < listCount; i++){
+                float curScore = ScoreFunc(list[i]);
+                if(curScore >= maxScore){
+                    maxScore = curScore;
+                    bestIndex = i;
+                }
+            }
+            return list[bestIndex];
+        }
+
+        public static T GetLowestScoringElement<T>(this List<T> list, System.Func<T, float> ScoreFunc) {
+            float minScore = Mathf.Infinity;
+            int bestIndex = 0;
+            int listCount = list.Count;
+            for(int i = 0; i < listCount; i++){
+                float curScore = ScoreFunc(list[i]);
                 if(curScore <= minScore){
                     minScore = curScore;
                     bestIndex = i;
@@ -284,7 +389,8 @@ namespace Phil {
     public static Rect GetNormalizedScreenRect(this RectTransform rectTransform){
         Rect screenRect = GetScreenRect(rectTransform);
         Canvas c = rectTransform.GetComponentInParent<Canvas>().rootCanvas;
-        var dims = c.GetComponent<RectTransform>().rect.size;
+        c.TryGetComponent<RectTransform>(out var rt);
+        var dims = rt.rect.size;
         return new Rect(screenRect.position / dims, screenRect.size / dims);
     }
 
@@ -337,10 +443,18 @@ namespace Phil {
 	}
 
 	public static Vector2 Scale(this CanvasScaler canvasScaler, Vector2 screenPosition){
-		float xFactor = canvasScaler.referenceResolution.x / Screen.width;
-		float yFactor = canvasScaler.referenceResolution.y / Screen.height;
-		float scaleFactor = Mathf.Lerp (xFactor, yFactor, canvasScaler.matchWidthOrHeight);
-		return screenPosition * scaleFactor;
+        switch(canvasScaler.uiScaleMode){
+        default:
+        case CanvasScaler.ScaleMode.ScaleWithScreenSize: {
+            float xFactor = canvasScaler.referenceResolution.x / Screen.width;
+            float yFactor = canvasScaler.referenceResolution.y / Screen.height;
+            float scaleFactor = Mathf.Lerp (xFactor, yFactor, canvasScaler.matchWidthOrHeight);
+            return screenPosition * scaleFactor;
+        }
+        case CanvasScaler.ScaleMode.ConstantPixelSize: {
+            return screenPosition; // * canvasScaler.scaleFactor;
+        }
+        }
 	}
 
 	public static Vector2 Unscale(this CanvasScaler scaler, Vector2 worldPosition){
@@ -359,6 +473,12 @@ namespace Phil {
     public static void ChangeSelection(this EventSystem es, GameObject newSelection, BaseEventData pointer){
         es.SetSelectedGameObject(null, pointer);
         es.SetSelectedGameObject(newSelection, pointer);
+    }
+
+    // AudioCilp
+    public static double DSPLength(this AudioClip clip){
+        double songLength = ((double)clip.samples) / ((double)clip.frequency);
+        return songLength;
     }
 
     }   

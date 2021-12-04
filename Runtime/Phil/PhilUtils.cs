@@ -8,6 +8,28 @@ namespace Phil {
 
 public static class Utils {
 
+    // return true if the current velocity overshoots the target position and got clamped
+    public static bool ClampVelocityToTarget(ref float velocityToClamp, in float dt, in float startPos, in float targetPos){
+        float targetDelta = targetPos - startPos;
+        float currentEstimatedDelta = velocityToClamp * dt;
+        if( Mathf.Abs(targetDelta) <= Mathf.Abs(currentEstimatedDelta) ){
+            velocityToClamp = (dt == 0f) ? 0 : (targetDelta / dt);
+            return true;
+        }
+        return false;
+    }
+
+    public static bool ClampVelocityToTarget(ref Vector2 velocityToClamp, in float dt, in Vector2 startPos, in Vector2 targetPos){
+        Vector2 targetDelta = (targetPos - startPos);
+        float targetDeltaMagnitude = targetDelta.magnitude;
+        float currentEstimatedDeltaMagnitude = velocityToClamp.magnitude * dt;
+        if( targetDeltaMagnitude <= currentEstimatedDeltaMagnitude ){
+            velocityToClamp = (dt == 0f) ? Vector2.zero : (targetDelta / dt);
+            return true;
+        }
+        return false;
+    }
+
     public static float ClampMagnitude(float signedValue, float absoluteMagnitude){
         return Mathf.Clamp(signedValue, -absoluteMagnitude, absoluteMagnitude);
     }

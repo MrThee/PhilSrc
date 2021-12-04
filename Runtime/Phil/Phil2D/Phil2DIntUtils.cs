@@ -4,6 +4,20 @@ namespace Phil {
 
 public static class Phil2DIntUtils {
 
+    public struct HitResult {
+        public RectInt newWorldBox;
+        public Vector2Int normal;
+        public Vector2Int effectiveDelta;
+    }
+
+    public static Vector2Int Floor(Vector2 v2){
+        return new Vector2Int( Mathf.FloorToInt(v2.x), Mathf.FloorToInt(v2.y) );
+    }
+
+    public static Vector2Int Divide(Vector2Int a, Vector2Int b){
+        return new Vector2Int(a.x/b.x, a.y/b.y);
+    }
+
     public static RectInt ToWorldPixelRect(Vector2 worldPivotPosition, Sprite sprite){
         var pivotPos_px = sprite.pixelsPerUnit * worldPivotPosition;
         var pivot_px = sprite.pivot;
@@ -25,6 +39,42 @@ public static class Phil2DIntUtils {
         return new RectInt(min, size);
     }
 
+    public static RectInt RotateRectInt(RectInt ri, Vector2Int pivot, int quarterTurnsClockwise){
+        // Get the corners
+        var a = ri.position;
+        var trueMax = ri.TrueMax();
+        var b = new Vector2Int(trueMax.x, ri.position.y);
+        var c = new Vector2Int(ri.position.x, trueMax.y);
+        var d = trueMax;
+        // Rotate each one.
+        a = Rotate(a, pivot, quarterTurnsClockwise);
+        b = Rotate(b, pivot, quarterTurnsClockwise);
+        c = Rotate(c, pivot, quarterTurnsClockwise);
+        d = Rotate(d, pivot, quarterTurnsClockwise);
+        // Rebuild RectInt
+        ri = GrokRectInt(a,b,c,d);
+        return ri;
+    }
+
+    public static Vector2Int Rotate(Vector2Int point, Vector2Int pivot, int quarterTurnsClockwise){
+        int quarterTurnsTruc = Phil.Math.SawtoothMod(quarterTurnsClockwise, 4);
+        Vector2Int offset = point - pivot;
+        switch(quarterTurnsTruc){
+        default: case 0: break;
+        case 1: offset = new Vector2Int(offset.y, -offset.x); break;
+        case 2: offset = new Vector2Int(-offset.x, -offset.y); break;
+        case 3: offset = new Vector2Int(-offset.y, offset.x); break;
+        }
+        return pivot + offset;
+    }
+
+    public static RectInt GrokRectInt(Vector2Int a, Vector2Int b, Vector2Int c, Vector2Int d){
+        Vector2Int min = Vector2Int.Min(Vector2Int.Min( a,b ), Vector2Int.Min( c,d ));
+        Vector2Int max = Vector2Int.Max(Vector2Int.Max( a,b ), Vector2Int.Max( c,d ));
+        Vector2Int newSize = max-min+Vector2Int.one;
+        return new RectInt(position: min, size: newSize);
+    }
+
     // TODO: mimic logical & operation from Phil.Core.RectInt
     public static bool TryGetRectIntersection(RectInt a, RectInt b, out RectInt intersection){
         if (!a.Overlaps (b)) {
@@ -44,15 +94,35 @@ public static class Phil2DIntUtils {
 		}
     }
 
-    public static bool RectIntCast(RectInt origin, Vector2Int delta, RectInt obstruction, 
-        out RectInt dst, out Vector2Int contactNormal, out RectInt overlapper)
+    public static bool TwoPhaseRectIntCast(RectInt origin, Vector2Int delta, RectInt obstruction, 
+        out RectInt dst, out Vector2Int compoundNormal, bool debug=false)
     {
-        // TODO: bounding-box check...
-        if(delta == Vector2Int.zero){
-            dst = origin;
+        bool xFirst = Mathf.Abs(delta.x) >= Mathf.Abs(delta.y);
+        Vector2Int xDelta = new Vector2Int(delta.x, 0); var yDelta = new Vector2Int(0, delta.y);
+        Vector2Int firstDelta = xFirst ? xDelta: yDelta;
+        Vector2Int secondDelta = xFirst ? yDelta : xDelta;
+
+        bool firstHit = RectIntCast(origin, firstDelta, obstruction, out RectInt firstDst, out Vector2Int firstNorm, out _);
+        bool secondHit = RectIntCast(firstDst, secondDelta, obstruction, out RectInt finalDst, out Vector2Int secondNorm, out _);
+        
+        compoundNormal = firstNorm + secondNorm;
+        dst = finalDst;
+        return firstHit || secondHit;
+    }
+
+    public static bool RectIntCast(RectInt origin, Vector2Int delta, RectInt obstruction,
+        out RectInt dst, out Vector2Int contactNormal, out RectInt overlapIntersection, bool debug=false)
+    {
+        if(delta == Vector2Int.zero ){
             contactNormal = Vector2Int.zero;
-            overlapper = new RectInt();
-            return false;
+            if(TryGetRectIntersection(origin, obstruction, out overlapIntersection)){
+                dst = origin;
+                return true;
+            } else {
+                dst = origin;
+                overlapIntersection = new RectInt(Vector2Int.zero, Vector2Int.zero);
+                return false;
+            }
         }
 
         float strideWidth = (float)origin.width / 2;
@@ -71,8 +141,6 @@ public static class Phil2DIntUtils {
             Vector2Int position = origin.position + Vector2Int.RoundToInt(i * floatStride);
             RectInt iterRect = new RectInt(position, origin.size);
 
-            // Debug.LogFormat("iter rect: {0}", iterRect);
-        
             if(iterRect.Overlaps(obstruction)){
                 TryGetRectIntersection(iterRect, obstruction, out RectInt ol);
                 overlapRect = ol;
@@ -84,64 +152,76 @@ public static class Phil2DIntUtils {
         if(overlapRect.HasValue == false){
             dst = new RectInt(origin.position + delta, origin.size);
             contactNormal = Vector2Int.zero;
-            overlapper = new RectInt();
+            overlapIntersection = new RectInt();
             return false;
         }
         var overlap = overlapRect.Value;
-        overlapper = overlap;
-        // Debug.LogFormat("Coarse rect: {0}", coarseRect);
-        // Debug.LogFormat("Overlap rect: {0}", overlap);
+        overlapIntersection = overlap;
+        if(debug) Debug.LogFormat("Coarse rect: {0}", coarseRect);
+        if(debug) Debug.LogFormat("Overlap rect: {0}", overlap);
 
 
         // At this point, one of our rects overlapped
         // Use our delta, coarse rect, and overlap rect to back-out of overlapping
         Vector2Int backTrack = Vector2Int.zero;
-
-        // TODO: fix contact normal
+        // fine-tune contact normal? right now just returns a cardinal dir or zero.
         contactNormal = Vector2Int.zero;
-        // Vector2Int backTrackA = Vector2Int.zero;
-        if(delta.x != 0){
-            float slope = (float)delta.y / delta.x;
-            if(-delta.x > 0){
-                int rightResolve = 1 + overlap.TrueMax().x - coarseRect.x;
-                // Debug.LogFormat("Right resolve: {0}", rightResolve);
-                backTrack.x = rightResolve;
-                backTrack.y = Mathf.RoundToInt(rightResolve * slope);
-                contactNormal = Vector2Int.right;
-            } else {
-                int leftResolve = -Mathf.Abs(coarseRect.TrueMax().x - overlap.x + 1);
-                // Debug.LogFormat("Left resolve: {0}", leftResolve);
-                backTrack.x = leftResolve;
-                backTrack.y = Mathf.RoundToInt(leftResolve * slope);
-                contactNormal = Vector2Int.left;
-            }
-        }
-        // Vector2Int backTrackB = Vector2Int.zero;
-        if(delta.y != 0) {
-            // Pure vertical
-            float invSlope = (float)delta.x / delta.y;
-            if(delta.y > 0){
-                int downResolve = -Mathf.Abs(coarseRect.TrueMax().y - overlap.y + 1);
-                // Debug.LogFormat("Down resolve: {0}", downResolve);
-                backTrack.y = downResolve;
-                backTrack.x = Mathf.RoundToInt(downResolve * invSlope);
-                contactNormal = Vector2Int.down;
-            } else {
-                int upResolve = 1 + overlap.TrueMax().y - coarseRect.y;
-                // Debug.LogFormat("Up resolve: {0}", upResolve);
-                backTrack.y = upResolve;
-                backTrack.x = Mathf.RoundToInt(upResolve * invSlope);
-                contactNormal = Vector2Int.up;
-            }
-        }
 
-        // Note: we don't handle corner-to-corner collisions here.
+        {
+            Vector2Int backtrackFromHorz = Vector2Int.zero;
+            Vector2Int contactNormalFromHorz = Vector2Int.one;
+            if(delta.x != 0){
+                float slope = (float)delta.y / delta.x;
+                if(-delta.x > 0){
+                    int rightResolve = 1 + overlap.TrueMax().x - coarseRect.x;
+                    backtrackFromHorz.x = rightResolve;
+                    backtrackFromHorz.y = Mathf.RoundToInt(rightResolve * slope);
+                    if(debug) Debug.LogFormat("Right resolve: {0}. backtrackFromHorz: {1}", rightResolve, backtrackFromHorz);
+                    contactNormalFromHorz = Vector2Int.right;
+                } else {
+                    int leftResolve = -Mathf.Abs(coarseRect.TrueMax().x - overlap.x + 1);
+                    backtrackFromHorz.x = leftResolve;
+                    backtrackFromHorz.y = Mathf.RoundToInt(leftResolve * slope);
+                    if(debug) Debug.LogFormat("Left resolve: {0}. backtrackFromHorz: {1}", leftResolve, backtrackFromHorz);
+                    contactNormalFromHorz = Vector2Int.left;
+                }
+            }
+            Vector2Int backtrackFromVert = Vector2Int.zero;
+            Vector2Int contactNormalFromVert = Vector2Int.zero;
+            if(delta.y != 0) {
+                // Pure vertical
+                float invSlope = (float)delta.x / delta.y;
+                if(delta.y > 0){
+                    int downResolve = -Mathf.Abs(coarseRect.TrueMax().y - overlap.y + 1);
+                    backtrackFromVert.y = downResolve;
+                    backtrackFromVert.x = Mathf.RoundToInt(downResolve * invSlope);
+                    if(debug) Debug.LogFormat("Down resolve: {0}. backtrackFromVert: {1}.", downResolve, backtrackFromVert);
+                    contactNormalFromVert = Vector2Int.down;
+                } else {
+                    int upResolve = 1 + overlap.TrueMax().y - coarseRect.y;
+                    backtrackFromVert.y = upResolve;
+                    backtrackFromVert.x = Mathf.RoundToInt(upResolve * invSlope);
+                    if(debug) Debug.LogFormat("Up resolve: {0}. backtrackFromVert: {1}", upResolve, backtrackFromVert);
+                    contactNormalFromVert = Vector2Int.up;
+                }
+            }
+            bool useVert = (Mathf.Abs(delta.y) > Mathf.Abs(delta.x));
+            backTrack = useVert ? backtrackFromVert : backtrackFromHorz;
+            contactNormal = useVert ? contactNormalFromVert : contactNormalFromHorz;
+        }
+        // Note: we don't handle corner-to-corner collisions here^.
+
+        if(debug) Debug.LogFormat("backtrack: {0}", backTrack);
 
         Vector2Int finalRectPos = coarseRect.position + backTrack;
         dst = new RectInt(finalRectPos, origin.size);
-        // Debug.LogFormat("Final rect: {0}", finalRectPos);
+        
+        if(debug) Debug.LogFormat("Final rect: {0}", finalRectPos);
+
         return true;
     }
+
+
 
     public static bool RayRectIntersect(Vector2Int origin, Vector2Int delta, RectInt rect, out Vector2Int preContact, out Vector2Int contactNormal){
         // # Bounding Box Check

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Phil.Core {
 
 [System.Serializable]
-public struct FloatSlider : IUpdateState<float> {
+public class FloatSlider : IUpdateState<float> {
 
     public float currentValue { get; private set; }
     private float m_defaultRate;
@@ -20,7 +20,7 @@ public struct FloatSlider : IUpdateState<float> {
             if(m_currentTarget.HasValue == false){
                 return 0;
             }
-            float direction = Mathf.Sin(m_currentTarget.Value - currentValue);
+            float direction = (m_currentTarget.Value - currentValue) > 0 ? 1f : -1f;
             return (int)direction;
         }
     }

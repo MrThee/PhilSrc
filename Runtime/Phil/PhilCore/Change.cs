@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 namespace Phil.Core {
 
-public readonly struct Change<T> : System.IEquatable<Change<T>> 
+public struct Change<T> : System.IEquatable<Change<T>> 
 {
-    public bool doChange { get;}
+    public bool doChange; // { get; private set; }
 
-    public T value { get; }
+    public T value; // { get; private set; }
 
     public Change(T value, bool change){
         this.doChange = change;
@@ -18,10 +18,12 @@ public readonly struct Change<T> : System.IEquatable<Change<T>>
         return new Change<T>(newValue, changed);
     }
 
-    public void TryApply(ref T dst){
+    public bool TryApply(ref T dst){
         if(doChange){
             dst = value;
+            return true;
         }
+        return false;
     }
 
     public bool TryGet(out T newValue){
@@ -34,16 +36,23 @@ public readonly struct Change<T> : System.IEquatable<Change<T>>
         }
     }
 
+    public void Append(Change<T> appendee){
+        this.Append(ref appendee);
+    }
+
+    public void Append(ref Change<T> appendee){
+        if(appendee.doChange){
+            this.value = appendee.value;
+            this.doChange = appendee.doChange;
+        }
+    }
+
     public bool To(out T newValue) => TryGet(out newValue);
 
     public static Change<T> Dont => new Change<T>(default(T), false);
 
     public static implicit operator Change<T>(T value){
         return new Change<T>(value, true);
-    }
-
-    public static implicit operator bool(Change<T> c){
-        return c.doChange;
     }
 
     public bool Equals(Change<T> other){

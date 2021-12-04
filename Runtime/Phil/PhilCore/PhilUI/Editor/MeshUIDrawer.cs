@@ -5,6 +5,8 @@ using UnityEditor;
 
 namespace Phil {
 
+#if UNITY_EDITOR
+
 [CustomEditor(typeof(Phil.Core.MeshUI))]
 public class MeshUIDrawer : Editor {
 
@@ -13,5 +15,7 @@ public class MeshUIDrawer : Editor {
     }
 
 }
+
+#endif
 
 }

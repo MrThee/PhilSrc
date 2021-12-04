@@ -64,6 +64,9 @@ public struct RectInt : System.IEquatable<RectInt> {
 	public int2 northEast { get { return new int2 (right, top); } }
 	public int2 southEast { get { return new int2 (right, bottom); } }
 
+	public int2 min => position;
+	public int2 max => position + dimensions - int2.one;
+
 	public Rect WorldRect(){
 		
 		Vector2 pos = new Vector2 ((float)position.x - 0.5f, (float)position.y - 0.5f);
@@ -144,6 +147,10 @@ public struct RectInt : System.IEquatable<RectInt> {
 			int height = minTop - maxBot + 1;
 			return new RectInt ( new int2 (maxLeft, maxBot), new int2 (width, height) );
 		}
+	}
+
+	public static implicit operator UnityEngine.RectInt(RectInt ri){
+		return new UnityEngine.RectInt(ri.position, ri.dimensions);
 	}
 
 	public override bool Equals (object obj)

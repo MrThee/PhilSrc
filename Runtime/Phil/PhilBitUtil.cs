@@ -6,6 +6,13 @@ namespace Phil {
 
 public static class BitExtensions {
 
+    public static ulong SetBits(this ref ulong word, ulong bitMask, bool bitValue){
+        ulong oldContent = word & (~bitMask);
+        ulong newValueBit = bitMask & (bitValue ? ulong.MaxValue : 0);
+        word = oldContent | newValueBit;
+        return word;
+    }
+
     public static int? HighestInactiveBitPosition(this ulong word){
         if(word == ulong.MaxValue){
             return null;

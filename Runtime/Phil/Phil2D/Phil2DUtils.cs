@@ -7,6 +7,14 @@ namespace Phil {
 
 public static class Phil2DUtils {
 
+    public static Vector2 Rotate(Vector2 v, float angleInDegrees){
+        float delta = Mathf.Deg2Rad * angleInDegrees;
+        return new Vector2(
+            v.x * Mathf.Cos(delta) - v.y * Mathf.Sin(delta),
+            v.x * Mathf.Sin(delta) + v.y * Mathf.Cos(delta)
+        );
+    }
+
     public static Vector2 GetLossySize(this BoxCollider2D boxCollider){
         return Vector2.Scale( boxCollider.transform.lossyScale, boxCollider.size );
     }
@@ -50,6 +58,12 @@ public static class Phil2DUtils {
         intersection.y = a.y + u * ab.y;
 
         return true;
+    }
+
+    public static Rect GetEncapsulatingRect(Rect a, Rect b){
+        var min = Vector2.Min(a.min, b.min);
+        var max = Vector2.Max(a.max, b.max);
+        return new Rect(min, max-min);
     }
 
 }

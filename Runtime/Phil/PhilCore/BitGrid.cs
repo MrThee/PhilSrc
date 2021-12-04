@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Phil.Core {
 
-// TODO: test this
+[System.Serializable]
 public class BitGrid {
     public readonly int width;
     public readonly int height;
@@ -24,8 +24,51 @@ public class BitGrid {
         }
     }
 
+    public BitGrid(List<ulong> rawSrcWords, int width){
+        this.width = width;
+        int bitCount = rawSrcWords.Count * 64;
+        this.height = bitCount/width;
+        this.area = bitCount;
+        this.m_wordCount = rawSrcWords.Count;
+        this.m_words = new List<ulong>(m_wordCount);
+        for(int ul = 0; ul < m_wordCount; ul++){
+            this.m_words.Add(rawSrcWords[ul]);
+        }
+    }
+
+    public void CopyTo(List<int> dstBuffer){
+        dstBuffer.Clear();
+        foreach(ulong word in m_words){
+            // [ulong word]
+            // [int a][int b]
+            int a = (int)(word >> 32);
+            int b = (int)(word & 0xFFFFFFFF);
+            dstBuffer.Add(a);
+            dstBuffer.Add(b);
+        }
+    }
+
+    public void CopyTo(List<float> dstBuffer){
+        dstBuffer.Clear();
+        foreach(ulong word in m_words){
+            // [ulong word]
+            // [int a][int b]
+            int a = (int)(word >> 32);
+            int b = (int)(word & 0xFFFFFFFF);
+            dstBuffer.Add(a);
+            dstBuffer.Add(b);
+        }
+    }
+
     public bool Contains(int2 coord){
        if( coord.x < 0 || coord.x >= width || coord.y < 0 || coord.y >= height ){
+           return false;
+       }
+       return true;
+    }
+
+    public bool Contains(int x, int y){
+        if( x < 0 || x >= width || y < 0 || y >= height ){
            return false;
        }
        return true;
@@ -41,7 +84,19 @@ public class BitGrid {
         }
     }
 
+    public void SetAll(bool value){
+        ulong word = value ? ulong.MaxValue : 0;
+        for(int i = 0; i < m_wordCount; i++){
+            m_words[i] = word;
+        }
+    }
+
     public bool this[int2 coord]{
+        get => this[coord.x, coord.y];
+        set => this[coord.x, coord.y] = value;
+    }
+
+    public bool this[Vector2Int coord]{
         get => this[coord.x, coord.y];
         set => this[coord.x, coord.y] = value;
     }
@@ -51,14 +106,14 @@ public class BitGrid {
             int flatIndex = (y*width) + x;
             int wordIndex = flatIndex / 64;
             int wordBitShift = flatIndex % 64;
-            ulong wordBitMask = (ulong)1 << wordBitShift;
+            ulong wordBitMask = 0x8000000000000000uL >> wordBitShift;
             return (m_words[wordIndex] & wordBitMask) != 0;
         }
         set {
             int flatIndex = (y*width) + x;
             int wordIndex = flatIndex / 64;
             int wordBitShift = flatIndex % 64;
-            ulong wordBitMask = (ulong)1 << wordBitShift;
+            ulong wordBitMask = 0x8000000000000000uL >> wordBitShift;
 
             ulong wordThere = m_words[wordIndex];
             ulong theSame = (~wordBitMask) & wordThere;

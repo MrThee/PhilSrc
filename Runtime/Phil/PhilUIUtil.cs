@@ -15,7 +15,7 @@ public static class UIUtils {
 		// graphic.Rebuild( CanvasUpdate.Layout );
 	}
 
-	public static void PrePoolTMProTextField(TMPro.TextMeshProUGUI textField){
+	public static void PrePoolTMProTextField(TMPro.TMP_Text textField){
 		textField.ForceMeshUpdate();
 		PrePoolGraphicGeo(textField);
 	}

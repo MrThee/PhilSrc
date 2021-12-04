@@ -16,6 +16,12 @@ public struct int2 : IEquatable<int2> {
 		this.x = x;
 		this.y = y;
 	}
+
+	public int2(Vector2Int v2i){
+		this.x = v2i.x;
+		this.y = v2i.y;
+	}
+
 	public int2(Vector3 position){
 		this.x = Mathf.RoundToInt (position.x);
 		this.y = Mathf.RoundToInt (position.z);
@@ -27,6 +33,7 @@ public struct int2 : IEquatable<int2> {
 	}
 
 	public Vector2 vec2 { get { return new Vector2 (this.x, this.y); } }
+	public Vector2Int vec2i => new Vector2Int(this.x, this.y);
 	public Vector3 worldPos { get { return new Vector3 (this.x, 0f, this.y); } }
 	public int area { get { return Mathf.Abs (this.x) * Mathf.Abs (this.y); } }
 	public int2 normalized { get { return new int2 (Mathf.Clamp (this.x, -1, 1), Mathf.Clamp (this.y, -1, 1)); } }
@@ -238,6 +245,10 @@ public struct int2 : IEquatable<int2> {
 
 	public override bool Equals(object obj){
 		throw new System.ArgumentException("NO STRUCT BOXING!!!");
+	}
+
+	public static implicit operator Vector2Int(int2 value){
+		return new Vector2Int(value.x, value.y);
 	}
 }
 
