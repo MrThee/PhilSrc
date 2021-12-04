@@ -17,7 +17,7 @@ public struct int2 : IEquatable<int2> {
 		this.y = y;
 	}
 
-	public int2(Vector2Int v2i){
+	public int2(int2 v2i){
 		this.x = v2i.x;
 		this.y = v2i.y;
 	}
@@ -33,7 +33,7 @@ public struct int2 : IEquatable<int2> {
 	}
 
 	public Vector2 vec2 { get { return new Vector2 (this.x, this.y); } }
-	public Vector2Int vec2i => new Vector2Int(this.x, this.y);
+	public Vector2Int vec2i => new int2(this.x, this.y);
 	public Vector3 worldPos { get { return new Vector3 (this.x, 0f, this.y); } }
 	public int area { get { return Mathf.Abs (this.x) * Mathf.Abs (this.y); } }
 	public int2 normalized { get { return new int2 (Mathf.Clamp (this.x, -1, 1), Mathf.Clamp (this.y, -1, 1)); } }
@@ -175,26 +175,27 @@ public struct int2 : IEquatable<int2> {
 
 		int distFromCenter = (oddLowerSqrt/2) + 1; // 1->1; 3->2; 5->3; 7->4; ...
 
-		int minValueOnRing = oddLowerSqrt*oddLowerSqrt; // N_post 
-		int maxValueOnRing = (oddLowerSqrt+2) * (oddLowerSqrt+2) -1; // West of N_post
+		int minValueOnRing = oddLowerSqrt*oddLowerSqrt; // one to the right of the northwest corner
+		int maxValueOnRing = (oddLowerSqrt+2) * (oddLowerSqrt+2) -1; // nw corner
 		int ringSideLength = 2 * distFromCenter + 1;
 
-		int NE_post = minValueOnRing + distFromCenter;
+		int NE_post = minValueOnRing + 2*distFromCenter - 1;
 		int SE_post = NE_post + ringSideLength - 1;
 		int SW_post = SE_post + ringSideLength - 1;
 		int NW_post = SW_post + ringSideLength - 1;
 
-		if(flatIndex == minValueOnRing)
-			return this + int2.up * distFromCenter;
-		if(flatIndex == maxValueOnRing)
-			return this + int2.up * distFromCenter - int2.left;
+		if(flatIndex == minValueOnRing){
+            var value = this + new int2(-1,1) * distFromCenter + int2.right;
+            // Debug.LogFormat("flat index: {0}, dist form this: {1}, value: {2}, this: {3}", flatIndex, distFromCenter, value, this);
+			return value;
+        }
 		if(flatIndex == NE_post)
 			return this + int2.one * distFromCenter;
 		if(flatIndex == SE_post)
 			return this + new int2 (1, -1) * distFromCenter;
 		if (flatIndex == SW_post)
 			return this - int2.one * distFromCenter;
-		if (flatIndex == NW_post)
+		if (flatIndex == NW_post) // AKA, max value on ring
 			return this + new int2 (-1, 1) * distFromCenter;
 
 
@@ -217,20 +218,18 @@ public struct int2 : IEquatable<int2> {
 			int diff = flatIndex - SW_post;
 			return SW + int2.up * diff;
 		}
-		if (flatIndex > NW_post && flatIndex < maxValueOnRing) {
-			// North edge; west half
-			int2 NW = this + new int2 (-1, 1) * distFromCenter;
-			int diff = flatIndex - NW_post;
-			return NW + int2.right * diff;
-		}
 		if (flatIndex > minValueOnRing && flatIndex < NE_post) {
-			// North edge; east half
-			int2 N = this + int2.up * distFromCenter;
-			int diff = flatIndex - minValueOnRing;
-			return N + int2.right * diff;
+			// North edge
+            int2 NW = this + new int2 (-1, 1) * distFromCenter;
+			int diff = flatIndex - minValueOnRing + 1;
+            var v = NW + int2.right * diff;
+            // Debug.Log(v);
+			return v;
 		}
 			
-		Debug.LogError("You fucked up. Flat index: " + flatIndex);
+		Debug.LogErrorFormat("You fucked up. Flat index: {0}. Posts: NE {1}, SE {2}, SW {3}, NW: {4}",
+            flatIndex, NE_post, SE_post, SW_post, NW_post
+        );
 		return this;
 	}
 
@@ -248,7 +247,7 @@ public struct int2 : IEquatable<int2> {
 	}
 
 	public static implicit operator Vector2Int(int2 value){
-		return new Vector2Int(value.x, value.y);
+		return new int2(value.x, value.y);
 	}
 }
 
