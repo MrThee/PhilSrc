@@ -17,7 +17,7 @@ public struct int2 : IEquatable<int2> {
 		this.y = y;
 	}
 
-	public int2(int2 v2i){
+	public int2(Vector2Int v2i){
 		this.x = v2i.x;
 		this.y = v2i.y;
 	}
@@ -247,7 +247,7 @@ public struct int2 : IEquatable<int2> {
 	}
 
 	public static implicit operator Vector2Int(int2 value){
-		return new int2(value.x, value.y);
+		return new Vector2Int(value.x, value.y);
 	}
 }
 
