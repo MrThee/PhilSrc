@@ -292,6 +292,11 @@ namespace Phil {
             return list[bestIndex];
         }
 
+        public static T RollRandomElement<T>(this List<T> list){
+            int ri = UnityEngine.Random.Range(0, list.Count);
+            return list[ri];
+        }
+
         // Animation Curve
         public static AnimationCurve Clone(this AnimationCurve curve){
             Keyframe[] copyFrames = new Keyframe[curve.keys.Length];
