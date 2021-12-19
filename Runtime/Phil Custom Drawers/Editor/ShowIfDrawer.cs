@@ -30,10 +30,8 @@ public class ShowIfDrawer : PropertyDrawer {
 
     bool ShouldShow(SerializedProperty property, Attributes.ShowIf showIf){
         var so = property.serializedObject;
-        string rootPath = "rootpath";// System.IO.Path.GetDirectoryName(so.GetIterator().propertyPath);
         string searchPath = property.propertyPath.Replace('.','/');
         string holderPropPath = Path.GetDirectoryName(searchPath).Replace('\\','.');
-        Debug.Log($"holder path: {holderPropPath}");
         
         var soProp = so.GetIterator().Copy();
 
@@ -42,10 +40,8 @@ public class ShowIfDrawer : PropertyDrawer {
             neighborProp = so.FindProperty(showIf.neighborFieldName);
         } else {
             var holderProp = so.FindProperty(holderPropPath);
-            Debug.Log($"bProp: {holderProp?.name}");
             neighborProp = holderProp.FindPropertyRelative(showIf.neighborFieldName);
         }
-        Debug.Log($"neighbor prop: {neighborProp?.propertyPath}");
 
         if(neighborProp == null){
             Debug.LogWarning($"couldn't find neighboring property {showIf.neighborFieldName}");
