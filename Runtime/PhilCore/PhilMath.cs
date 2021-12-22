@@ -31,6 +31,10 @@ public static class Math {
 		return IntDivide(sum, qc);
 	}
 
+	public static float ClampAbs(float value, float maxAbsValue){
+		return Mathf.Clamp(value, -maxAbsValue, maxAbsValue);
+	}
+
 	public static int FloorToIndex(float norm_t, int elementCount){
 		if(norm_t >= 1f){
 			return elementCount-1;
@@ -48,6 +52,10 @@ public static class Math {
 
 	public static Vector2 RoundToGranularity(Vector2 value, float granularity){
 		return new Vector2( RoundToGranularity(value.x, granularity), RoundToGranularity(value.y, granularity) );
+	}
+
+	public static Vector3 RoundToGranularity(Vector3 value, float granularity){
+		return new Vector3( RoundToGranularity(value.x, granularity), RoundToGranularity(value.y, granularity), RoundToGranularity(value.z, granularity) );
 	}
 
 	public static float Remap(float value, float oldA, float oldB, float newA, float newB){

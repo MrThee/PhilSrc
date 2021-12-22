@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using System.Linq;
 
 namespace Phil.Edit {
 
@@ -154,6 +155,32 @@ public static class AssetUtils {
 		EditorUtility.CopySerializedIfDifferent (src, so);
 
 		return so;
+	}
+
+	public static void RefreshSubassets<T,E,A>(T dstContainer, 
+		System.Action<T> ClearContainerEntries, List<E> entryInstanceList, System.Action<T,List<E>> PutEntryListIntoContainer,
+		System.Func<E,A> GetAssetFromEntry ) 
+		where T:UnityEngine.Object where A:ScriptableObject 
+	{
+		EditorUtility.SetDirty(dstContainer);
+		Undo.RecordObject(dstContainer, $"Refreshing {dstContainer}");
+		// # Nuke existing sub-assets
+        var subassets = AssetDatabase.LoadAllAssetsAtPath( AssetDatabase.GetAssetPath(dstContainer) ).ToList();
+        subassets.RemoveAll(a => a == dstContainer);
+        foreach(var sub in subassets){
+            AssetDatabase.RemoveObjectFromAsset(sub);
+        }
+		AssetDatabase.SaveAssets();
+        ClearContainerEntries(dstContainer);
+        
+		PutEntryListIntoContainer( dstContainer, entryInstanceList );
+
+        foreach(var entry in entryInstanceList){
+			var newSubasset = GetAssetFromEntry(entry);
+            // ## add and import
+            AssetDatabase.AddObjectToAsset( newSubasset, dstContainer );
+            AssetDatabase.ImportAsset( AssetDatabase.GetAssetPath(newSubasset) );
+        }
 	}
 
 }

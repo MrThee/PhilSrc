@@ -486,6 +486,38 @@ namespace Phil {
         return songLength;
     }
 
+    // Box Collider
+    public static Vector3 GetBoxPoint(this BoxCollider bc, Vector3 signedNormXYZ){
+        Vector3 lossyScale = bc.transform.lossyScale;
+        Quaternion worldRotation = bc.transform.rotation;
+        Vector3 localSpaceOffset = bc.center;
+        Vector3 localBoxSize = bc.size;
+
+        Vector3 trueBoxCenter = bc.transform.position + worldRotation*Vector3.Scale(localSpaceOffset, lossyScale);
+        Vector3 worldOffset = Vector3.Scale( localBoxSize*0.5f, Vector3.Scale(lossyScale, (worldRotation * signedNormXYZ)) );
+        return worldOffset;
+    }
+
+    public static void GetCapsuleHemisphereCenters(this CapsuleCollider cc, out Vector3 a, out Vector3 b){
+        Vector3 lossyScale = cc.transform.lossyScale;
+        Quaternion worldRotation = cc.transform.rotation;
+        Vector3 localSpaceOffset = cc.center;
+        
+        Vector3 trueCapsuleCenter = cc.transform.position + worldRotation*Vector3.Scale( localSpaceOffset, lossyScale );
+        float trueFullHeight = cc.height * lossyScale[cc.direction];
+        float length2HemisphereCenter = (trueFullHeight - 2f*(cc.radius * Mathf.Max(lossyScale.x,Mathf.Max(lossyScale.y, lossyScale.z)) )) / 2f;
+        Vector3 localHeightDir;
+        switch(cc.direction){
+        default:
+        case 0: localHeightDir = Vector3.right; break;
+        case 1: localHeightDir = Vector3.up; break;
+        case 2: localHeightDir = Vector3.forward; break;
+        }
+        Vector3 aOffset = length2HemisphereCenter * (worldRotation*localHeightDir);
+        a = trueCapsuleCenter + aOffset;
+        b = trueCapsuleCenter - aOffset;
+    }
+
     }   
 
 }
