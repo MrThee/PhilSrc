@@ -155,6 +155,24 @@ public struct BezierCurve3D {
             Vector3.Lerp(a.p3, b.p3, t)
         );
     }
+
+    public (BezierCurve3D a, BezierCurve3D b) Split(float t){
+        var points = CalcMidpoints(t);
+        return (
+            new BezierCurve3D( this.p0, points.p01, points.p012, points.p0123 ),
+            new BezierCurve3D( points.p0123, points.p123, points.p23, this.p3 )
+        );
+    }
+
+    private (Vector3 p01, Vector3 p12, Vector3 p23, Vector3 p012, Vector3 p123, Vector3 p0123) CalcMidpoints(float t){
+        Vector3 p01 = Vector3.Lerp(p0, p1, t);
+        Vector3 p12 = Vector3.Lerp(p1, p2, t);
+        Vector3 p23 = Vector3.Lerp(p2, p3, t);
+        Vector3 p012 = Vector3.Lerp(p01, p12, t);
+        Vector3 p123 = Vector3.Lerp(p12, p23, t);
+        Vector3 p0123 = Vector3.Lerp(p012, p123, t);
+        return (p01, p12, p23, p012, p123, p0123);
+    }
 }
 
 }

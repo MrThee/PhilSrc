@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
+#if UNITY_EDITOR
+
 namespace Phil.Edit {
 
 public static class DrawerUtils {
@@ -48,3 +50,5 @@ public static class DrawerUtils {
 }
 
 }
+
+#endif

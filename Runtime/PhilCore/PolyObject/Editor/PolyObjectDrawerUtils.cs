@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 
+#if UNITY_EDITOR
+
 using Phil.Edit;
 
 namespace Phil.Core {
@@ -96,3 +98,5 @@ public static class PolyObjectDrawerUtils {
 }
 
 }
+
+#endif

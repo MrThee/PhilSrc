@@ -86,4 +86,17 @@ public static class Math {
 		return finalVector;
 	}
 
+	public static Vector3 Unproject(Vector3 baseVector, Vector3 unprojectAlongThisDirection){
+		return unprojectAlongThisDirection*baseVector.magnitude / Vector3.Dot(baseVector.normalized, unprojectAlongThisDirection);
+	}
+
+	// https://gamedev.stackexchange.com/a/188835
+	// https://math.vanderbilt.edu/schectex/courses/cubic/
+	// public static void CalcCubicPolynomialRoots(float a, float b, float c, float d, 
+	// 	out (float?, float?, float?, float?) roots 
+	// ) {
+		
+	// 	// var roots = MathNet.Numerics.FindRoots(d,c,b,a);
+	// }
+
 }}

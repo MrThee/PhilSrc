@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 
+#if UNITY_EDITOR
+
 namespace Phil.Core {
 
 // [CustomPropertyDrawer(typeof(PO))]
@@ -59,3 +61,5 @@ public abstract class PolyObjectDrawer<PO,T,A,B,C,D> : PropertyDrawer
 }
 
 }
+
+#endif

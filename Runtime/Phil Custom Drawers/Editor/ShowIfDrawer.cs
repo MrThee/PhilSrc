@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 
+#if UNITY_EDITOR
+
 namespace Phil.Drawers {
 
 [CustomPropertyDrawer(typeof(Attributes.ShowIf))]
@@ -57,3 +59,5 @@ public class ShowIfDrawer : PropertyDrawer {
 }
 
 }
+
+#endif

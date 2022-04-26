@@ -5,6 +5,8 @@ using UnityEditor;
 using System.IO;
 using System.Linq;
 
+#if UNITY_EDITOR
+
 namespace Phil.Edit {
 
 public static class AssetUtils {
@@ -120,6 +122,25 @@ public static class AssetUtils {
 			
 	}
 
+	public static void GetNeighborPrefabs(Object centralAsset, ref List<GameObject> neighborPrefabs){
+		neighborPrefabs.Clear();
+		string dirCentralAsset = GetDirectory (centralAsset);
+		GetPrefabsHere(ref neighborPrefabs, dirCentralAsset);
+	}
+
+	public static void GetPrefabsHere(ref List<GameObject> list, string directory="Assets"){
+		list.Clear();
+
+		string[] dirList = new string[1]; dirList [0] = directory;
+		string[] GUIDs = AssetDatabase.FindAssets("t:Prefab", dirList);
+
+		for (int i = 0; i < GUIDs.Length; i++) {
+			string assetPath = AssetDatabase.GUIDToAssetPath (GUIDs [i]);
+			GameObject gameObject = AssetDatabase.LoadAssetAtPath<GameObject> (assetPath);
+			list.Add(gameObject);
+		}
+	}
+
 	public static void GetAssetsWithScript<T> (ref List<T> list, string directory="Assets") where T:Component {
 		string[] dirList = new string[1]; dirList [0] = directory;
 
@@ -186,3 +207,5 @@ public static class AssetUtils {
 }
 
 }
+
+ #endif

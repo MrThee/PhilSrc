@@ -35,7 +35,42 @@ namespace Phil {
             return b ? 1 : -1;
         }
 
-        // Value Tuple
+        // Value Tuples
+        public static bool Contains<I>(this (I,I) pair, I item) where I:System.IEquatable<I>{
+            return item.Equals(pair.Item1) || item.Equals(pair.Item2);
+        }
+
+        public static bool Contains<I>(this (I,I,I) triple, I item) where I:System.IEquatable<I>{
+            return item.Equals(triple.Item1) || item.Equals(triple.Item2) || item.Equals(triple.Item3);
+        }
+
+        public static bool Contains<I>(this (I,I,I,I) quad, I item) where I:System.IEquatable<I>{
+            return item.Equals(quad.Item1) || item.Equals(quad.Item2) || item.Equals(quad.Item3) || item.Equals(quad.Item4);
+        }
+
+        public static bool Contains<I>(this (I,I,I,I,I,I,I,I) oct, I item) where I:System.IEquatable<I>{
+            return item.Equals(oct.Item1) || item.Equals(oct.Item2) || item.Equals(oct.Item3) || item.Equals(oct.Item4)
+                || item.Equals(oct.Item5) || item.Equals(oct.Item6) || item.Equals(oct.Item7) || item.Equals(oct.Item8)
+            ;
+        }
+        public static T GetItem<T>(this (T,T,T) quad, int i){
+            switch(i){
+            default: throw new System.ArgumentException(string.Format("Bad index: {0}", i));
+            case 0: return quad.Item1;
+            case 1: return quad.Item2;
+            case 2: return quad.Item3;
+            }
+        }
+
+        public static void SetItem<T>(ref this (T,T,T) quad, int i, T value){
+            switch(i){
+            default: throw new System.ArgumentException(string.Format("Bad index: {0}", i));
+            case 0: quad.Item1 = value; break;
+            case 1: quad.Item2 = value; break;
+            case 2: quad.Item3 = value; break;
+            }
+        }
+
         public static T GetItem<T>(this (T,T,T,T) quad, int i){
             switch(i){
             default: throw new System.ArgumentException(string.Format("Bad index: {0}", i));
@@ -71,6 +106,15 @@ namespace Phil {
         // System.Array
         public static bool IsNullOrEmpty<T>( this T[] arr ){
             return (arr == null || arr.Length == 0);
+        }
+
+        // returns the new valid size of the array
+        public static int RemoveAtSansResizing<T>( this T[] arr, int index){
+            int L = arr.Length;
+            for(int i = index; i < L-1; i++){
+                arr[i] = arr[i+1];
+            }
+            return L-1;
         }
 
         // System.Nullable
@@ -154,6 +198,10 @@ namespace Phil {
         }
 
         // Vector3
+        public static string BetterToString(this Vector3 vector3){
+            return string.Format("x: {0}, y: {1}, z: {2}", vector3.x, vector3.y, vector3.z);
+        }
+
         public static Vector3 Lateral(this Vector3 vector3){
             return new Vector3(vector3.x, 0f, vector3.z);
         }
@@ -193,6 +241,13 @@ namespace Phil {
                 Vector3 rotAxis = Vector3.Cross(originAxis, v3);
                 return Quaternion.AngleAxis(maxAngle, rotAxis) * (originAxis.normalized * v3.magnitude);
             }
+        }
+
+        public static void CalcNormAndTanComponents(this ref Vector3 v3, Vector3 planeNormal, 
+            out Vector3 normalComponent, out Vector3 tangentComponent)
+        {
+            normalComponent = Vector3.Project(v3, planeNormal);
+            tangentComponent = Vector3.ProjectOnPlane(v3, planeNormal);
         }
 
         // Bounds

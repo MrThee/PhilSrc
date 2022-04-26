@@ -4,6 +4,12 @@ using UnityEngine;
 
  using Phil.Attributes;
 
+ #if UNITY_EDITOR
+
+namespace Phil {
+
+namespace Drawers {
+
  // System.Flags doesn't always work, in particular for nested referencs to System.Flag enums
  
  public static class EditorExtension
@@ -63,3 +69,9 @@ using UnityEngine;
          prop.intValue = EditorExtension.DrawBitMaskField(position, prop.intValue, typeAttr.propType, label);
      }
  }
+
+}
+
+}
+
+ #endif
